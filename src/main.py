@@ -42,11 +42,55 @@ def handle_planets():
     planets = list(map(lambda x: x.serialize(), query))
     return jsonify(planets), 200
 
+@app.route('/planets', methods=['POST'])
+def handle_planet():
+    body = request.get_json()
+
+    if body is None:
+        raise APIException("You need to specify the request body as a json object", status_code=400)
+    if 'name' not in body:
+        raise APIException('You need to specify the name', status_code=400)
+    if 'climate' not in body:
+        raise APIException('You need to specify the climate', status_code=400)
+    if 'diameter' not in body:
+        raise APIException('You need to specify the diameter', status_code=400)
+    if 'orbital_period' not in body:
+        raise APIException('You need to specify the orbital_period', status_code=400)
+    if 'population' not in body:
+        raise APIException('You need to specify the population', status_code=400)
+
+    new_planet = Planet(name=body['name'], climate=body['climate'], diameter=body['diameter'], orbital_period=body['orbital_period'], population=body['population'] )
+    db.session.add(new_planet)
+    db.session.commit()
+    return "ok", 200
+
 @app.route('/characters', methods=['GET'])
 def handle_characters():
     query = Character.query.all()
     characters = list(map(lambda x: x.serialize(), query))
     return jsonify(characters), 200
+
+@app.route('/characters', methods=['POST'])
+def handle_character():
+    body = request.get_json()
+
+    if body is None:
+        raise APIException("You need to specify the request body as a json object", status_code=400)
+    if 'name' not in body:
+        raise APIException('You need to specify the name', status_code=400)
+    if 'birth_year' not in body:
+        raise APIException('You need to specify the birth_year', status_code=400)
+    if 'height' not in body:
+        raise APIException('You need to specify the height', status_code=400)
+    if 'skin_color' not in body:
+        raise APIException('You need to specify the skin_color', status_code=400)
+    if 'eye_color' not in body:
+        raise APIException('You need to specify the eye_color', status_code=400)
+
+    new_character = Character(name=body['name'], birth_year=body['birth_year'], height=body['height'], skin_color=body['skin_color'], eye_color=body['eye_color'] )
+    db.session.add(new_character)
+    db.session.commit()
+    return "ok", 200
 
 
 # this only runs if `$ python src/main.py` is executed
