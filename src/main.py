@@ -9,6 +9,11 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Planet, Character, Favourite_Character, Favourite_Planet
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+from werkzeug.security import generate_password_hash, check_password_hash
 #from models import Person
 
 app = Flask(__name__)
@@ -19,6 +24,8 @@ MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
 setup_admin(app)
+app.config["JWT_SECRET_KEY"] = "ha82hbk50gjqva978bru3ifeid20al0l9j2ks8d4kd72dncjafqw093jb8c0zz1"
+jwt = JWTManager(app)
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -29,6 +36,38 @@ def handle_invalid_usage(error):
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
+
+@app.route('/signup', methods=['POST'])
+def signup_post():
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    user = User.query.filter_by(email=email).first()
+    if user: # if a user is found, we want to redirect back to signup page so user can try again
+        raise APIException("Email already exists", status_code=400)
+
+    # create a new user with the form data. Hash the password so the plaintext version isn't saved.
+    new_user = User(email=email, name=name, password=generate_password_hash(password, method='sha256'))
+
+    # add the new user to the database
+    db.session.add(new_user)
+    db.session.commit()
+
+    return "ok", 200
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    
+    user = User.query.filter_by(email = email).first()
+    if not user or not check_password_hash(user.password, password):
+        flash('Please check your login details and try again.')
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
 
 @app.route('/users', methods=['GET'])
 def handle_users():
