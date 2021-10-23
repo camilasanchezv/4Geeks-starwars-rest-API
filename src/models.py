@@ -1,13 +1,15 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=False, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    id = Column(Integer, primary_key=True)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(80), unique=False, nullable=False)
+    is_active = Column(Boolean(), unique=False, nullable=False)
+    planets = db.relationship('Favourite_Planet', backref='user')
+    characters = db.relationship('Favourite_Character', backref='user')
 
     def __repr__(self):
         return '<User %r>' % self.email
@@ -20,13 +22,12 @@ class User(db.Model):
         }
 
 class Planet(db.Model):
-    __tablename__ = 'planet'
-    id = db.Column(Integer, primary_key=True)
-    name = db.Column(String(250), nullable=False)
-    climate = db.Column(String(250), nullable=False)
-    population = db.Column(Integer, nullable=False)
-    orbital_period = db.Column(Integer, nullable=False)
-    diameter = db.Column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(250), nullable=False)
+    climate = Column(String(250), nullable=False)
+    population = Column(Integer, nullable=False)
+    orbital_period = Column(Integer, nullable=False)
+    diameter = Column(Integer, nullable=False)
 
     def __repr__(self):
         return '<Planet %r>' % self.name
@@ -35,17 +36,19 @@ class Planet(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            # do not serialize the password, its a security breach
+            "climate": self.climate,
+            "population": self.population,
+            "orbital_period": self.orbital_period,
+            "diameter": self.diameter,
         }
 
 class Character(db.Model):
-    __tablename__ = 'character'
-    id = db.Column(Integer, primary_key=True)
-    name = db.Column(String(250), nullable=False)
-    birth_year = db.Column(String(250), nullable=False)
-    height = db.Column(Integer, nullable=False)
-    skin_color = db.Column(String(100), nullable=False)
-    eye_color = db.Column(String(100), nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(250), nullable=False)
+    birth_year = Column(String(250), nullable=False)
+    height = Column(Integer, nullable=False)
+    skin_color = Column(String(100), nullable=False)
+    eye_color = Column(String(100), nullable=False)
 
     def __repr__(self):
         return '<Character %r>' % self.name
@@ -54,5 +57,16 @@ class Character(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            # do not serialize the password, its a security breach
+            "birth_year": self.birth_year,
+            "height": self.height,
+            "skin_color": self.skin_color,
+            "eye_color": self.eye_color,
         }
+
+class Favourite_Planet(db.Model):
+    user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    planet_id = Column(Integer, ForeignKey('planet.id'), primary_key=True)
+
+class Favourite_Character(db.Model):
+    user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    character_id = Column(Integer, ForeignKey('character.id'), primary_key=True)
