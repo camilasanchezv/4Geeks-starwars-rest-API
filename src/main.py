@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planet, Character
+from models import db, User, Planet, Character, Favourite_Character, Favourite_Planet
 #from models import Person
 
 app = Flask(__name__)
@@ -64,6 +64,22 @@ def handle_planet():
     db.session.commit()
     return "ok", 200
 
+@app.route('/favourite_planet', methods=['POST'])
+def handle_favourite_planet():
+    body = request.get_json()
+
+    if body is None:
+        raise APIException("You need to specify the request body as a json object", status_code=400)
+    if 'user_id' not in body:
+        raise APIException('You need to specify the user_id', status_code=400)
+    if 'planet_id' not in body:
+        raise APIException('You need to specify the planet_id', status_code=400)
+
+    new_favourite = Favourite_Planet(user_id=body['user_id'], planet_id=body['planet_id'] )
+    db.session.add(new_favourite)
+    db.session.commit()
+    return "ok", 200
+
 @app.route('/characters', methods=['GET'])
 def handle_characters():
     query = Character.query.all()
@@ -92,6 +108,24 @@ def handle_character():
     db.session.commit()
     return "ok", 200
 
+@app.route('/favourites', methods=['GET'])
+def handle_favourites():
+    body = request.get_json()
+
+    if body is None:
+        raise APIException("You need to specify the request body as a json object", status_code=400)
+    if 'user_id' not in body:
+        raise APIException('You need to specify the user_id', status_code=400)
+
+    id = body['user_id']
+
+    query_planets = Favourite_Planet.query.filter(Favourite_Planet.user_id == id).all()
+    query_characters = Favourite_Character.query.filter(Favourite_Character.user_id == id).all()
+    
+    planets = list(map(lambda x: x.serialize(), query_planets))
+    characters = list(map(lambda x: x.serialize(), query_characters))
+
+    return jsonify({"characters": characters, "planets": planets}), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
