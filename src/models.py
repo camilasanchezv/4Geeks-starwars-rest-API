@@ -7,7 +7,6 @@ class User(db.Model):
     id = Column(Integer, primary_key=True)
     email = Column(String(120), unique=True, nullable=False)
     password = Column(String(80), unique=False, nullable=False)
-    is_active = Column(Boolean(), unique=False, nullable=False)
     planets = db.relationship('Favourite_Planet', backref='user')
     characters = db.relationship('Favourite_Character', backref='user')
 

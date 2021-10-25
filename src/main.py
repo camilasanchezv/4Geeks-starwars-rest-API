@@ -13,7 +13,7 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_bcrypt import Bcrypt
 #from models import Person
 
 app = Flask(__name__)
@@ -26,6 +26,7 @@ CORS(app)
 setup_admin(app)
 app.config["JWT_SECRET_KEY"] = "ha82hbk50gjqva978bru3ifeid20al0l9j2ks8d4kd72dncjafqw093jb8c0zz1"
 jwt = JWTManager(app)
+bcrypt = Bcrypt(app)
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -39,15 +40,21 @@ def sitemap():
 
 @app.route('/signup', methods=['POST'])
 def signup_post():
-    email = request.form.get('email')
-    password = request.form.get('password')
+    body = request.get_json()
 
-    user = User.query.filter_by(email=email).first()
-    if user: # if a user is found, we want to redirect back to signup page so user can try again
-        raise APIException("Email already exists", status_code=400)
+    if body is None:
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
+    if 'email' not in body:
+        raise APIException('You need to specify the email.', status_code=400)
+    if 'password' not in body:
+        raise APIException('You need to specify the password.', status_code=400)
+
+    user = User.query.filter_by(email = body['email']).first()
+    if user:
+        raise APIException('There is already an account with this email.', status_code=400)
 
     # create a new user with the form data. Hash the password so the plaintext version isn't saved.
-    new_user = User(email=email, name=name, password=generate_password_hash(password, method='sha256'))
+    new_user = User(email=body['email'], password=bcrypt.generate_password_hash(body['password']).decode('utf-8'))
 
     # add the new user to the database
     db.session.add(new_user)
@@ -57,14 +64,12 @@ def signup_post():
 
 @app.route("/login", methods=["POST"])
 def login():
-
-    
     email = request.json.get("email", None)
     password = request.json.get("password", None)
     
     user = User.query.filter_by(email = email).first()
-    if not user or not check_password_hash(user.password, password):
-        flash('Please check your login details and try again.')
+    if not user or not bcrypt.check_password_hash(user.password, password):
+        raise APIException('Please check your login details and try again.', status_code=400)
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
@@ -86,17 +91,17 @@ def handle_planet():
     body = request.get_json()
 
     if body is None:
-        raise APIException("You need to specify the request body as a json object", status_code=400)
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
     if 'name' not in body:
-        raise APIException('You need to specify the name', status_code=400)
+        raise APIException('You need to specify the name.', status_code=400)
     if 'climate' not in body:
-        raise APIException('You need to specify the climate', status_code=400)
+        raise APIException('You need to specify the climate.', status_code=400)
     if 'diameter' not in body:
-        raise APIException('You need to specify the diameter', status_code=400)
+        raise APIException('You need to specify the diameter.', status_code=400)
     if 'orbital_period' not in body:
-        raise APIException('You need to specify the orbital_period', status_code=400)
+        raise APIException('You need to specify the orbital_period.', status_code=400)
     if 'population' not in body:
-        raise APIException('You need to specify the population', status_code=400)
+        raise APIException('You need to specify the population.', status_code=400)
 
     new_planet = Planet(name=body['name'], climate=body['climate'], diameter=body['diameter'], orbital_period=body['orbital_period'], population=body['population'] )
     db.session.add(new_planet)
@@ -108,11 +113,11 @@ def handle_favourite_planet():
     body = request.get_json()
 
     if body is None:
-        raise APIException("You need to specify the request body as a json object", status_code=400)
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
     if 'user_id' not in body:
-        raise APIException('You need to specify the user_id', status_code=400)
+        raise APIException('You need to specify the user_id.', status_code=400)
     if 'planet_id' not in body:
-        raise APIException('You need to specify the planet_id', status_code=400)
+        raise APIException('You need to specify the planet_id.', status_code=400)
 
     new_favourite = Favourite_Planet(user_id=body['user_id'], planet_id=body['planet_id'] )
     db.session.add(new_favourite)
@@ -130,17 +135,17 @@ def handle_character():
     body = request.get_json()
 
     if body is None:
-        raise APIException("You need to specify the request body as a json object", status_code=400)
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
     if 'name' not in body:
-        raise APIException('You need to specify the name', status_code=400)
+        raise APIException('You need to specify the name.', status_code=400)
     if 'birth_year' not in body:
-        raise APIException('You need to specify the birth_year', status_code=400)
+        raise APIException('You need to specify the birth_year.', status_code=400)
     if 'height' not in body:
-        raise APIException('You need to specify the height', status_code=400)
+        raise APIException('You need to specify the height.', status_code=400)
     if 'skin_color' not in body:
-        raise APIException('You need to specify the skin_color', status_code=400)
+        raise APIException('You need to specify the skin_color.', status_code=400)
     if 'eye_color' not in body:
-        raise APIException('You need to specify the eye_color', status_code=400)
+        raise APIException('You need to specify the eye_color.', status_code=400)
 
     new_character = Character(name=body['name'], birth_year=body['birth_year'], height=body['height'], skin_color=body['skin_color'], eye_color=body['eye_color'] )
     db.session.add(new_character)
@@ -152,9 +157,9 @@ def handle_favourites():
     body = request.get_json()
 
     if body is None:
-        raise APIException("You need to specify the request body as a json object", status_code=400)
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
     if 'user_id' not in body:
-        raise APIException('You need to specify the user_id', status_code=400)
+        raise APIException('You need to specify the user_id.', status_code=400)
 
     id = body['user_id']
 
