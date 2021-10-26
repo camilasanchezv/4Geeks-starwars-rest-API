@@ -86,6 +86,14 @@ def handle_planets():
     planets = list(map(lambda x: x.serialize(), query))
     return jsonify(planets), 200
 
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def handle_planet_by_id(planet_id):
+    query = Planet.query.get(planet_id)
+    if not query:
+        raise APIException('Planet not found.', status_code=404)
+
+    return jsonify(query.serialize()), 200
+
 @app.route('/planets', methods=['POST'])
 def handle_planet():
     body = request.get_json()
@@ -129,6 +137,14 @@ def handle_characters():
     query = Character.query.all()
     characters = list(map(lambda x: x.serialize(), query))
     return jsonify(characters), 200
+
+@app.route('/characters/<int:character_id>', methods=['GET'])
+def handle_character_by_id(character_id):
+    query = Character.query.get(character_id)
+    if not query:
+        raise APIException('Character not found.', status_code=404)
+
+    return jsonify(query.serialize()), 200
 
 @app.route('/characters', methods=['POST'])
 def handle_character():
