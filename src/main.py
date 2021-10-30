@@ -81,12 +81,14 @@ def handle_users():
     return jsonify(users), 200
 
 @app.route('/planets', methods=['GET'])
+@jwt_required()
 def handle_planets():
     query = Planet.query.all()
     planets = list(map(lambda x: x.serialize(), query))
     return jsonify(planets), 200
 
 @app.route('/planets/<int:planet_id>', methods=['GET'])
+@jwt_required()
 def handle_planet_by_id(planet_id):
     query = Planet.query.get(planet_id)
     if not query:
@@ -94,51 +96,32 @@ def handle_planet_by_id(planet_id):
 
     return jsonify(query.serialize()), 200
 
-@app.route('/planets', methods=['POST'])
-def handle_planet():
-    body = request.get_json()
-
-    if body is None:
-        raise APIException("You need to specify the request body as a json object.", status_code=400)
-    if 'name' not in body:
-        raise APIException('You need to specify the name.', status_code=400)
-    if 'climate' not in body:
-        raise APIException('You need to specify the climate.', status_code=400)
-    if 'diameter' not in body:
-        raise APIException('You need to specify the diameter.', status_code=400)
-    if 'orbital_period' not in body:
-        raise APIException('You need to specify the orbital_period.', status_code=400)
-    if 'population' not in body:
-        raise APIException('You need to specify the population.', status_code=400)
-
-    new_planet = Planet(name=body['name'], climate=body['climate'], diameter=body['diameter'], orbital_period=body['orbital_period'], population=body['population'] )
-    db.session.add(new_planet)
-    db.session.commit()
-    return "ok", 200
-
 @app.route('/favourite_planet', methods=['POST'])
+@jwt_required()
 def handle_favourite_planet():
     body = request.get_json()
 
     if body is None:
         raise APIException("You need to specify the request body as a json object.", status_code=400)
-    if 'user_id' not in body:
-        raise APIException('You need to specify the user_id.', status_code=400)
     if 'planet_id' not in body:
         raise APIException('You need to specify the planet_id.', status_code=400)
 
-    new_favourite = Favourite_Planet(user_id=body['user_id'], planet_id=body['planet_id'] )
+    id = get_jwt_identity()
+
+    new_favourite = Favourite_Planet(user_id=id, planet_id=body['planet_id'] )
     db.session.add(new_favourite)
     db.session.commit()
     return "ok", 200
 
 @app.route('/characters', methods=['GET'])
+@jwt_required()
 def handle_characters():
     query = Character.query.all()
     characters = list(map(lambda x: x.serialize(), query))
     return jsonify(characters), 200
 
 @app.route('/characters/<int:character_id>', methods=['GET'])
+@jwt_required()
 def handle_character_by_id(character_id):
     query = Character.query.get(character_id)
     if not query:
@@ -146,38 +129,10 @@ def handle_character_by_id(character_id):
 
     return jsonify(query.serialize()), 200
 
-@app.route('/characters', methods=['POST'])
-def handle_character():
-    body = request.get_json()
-
-    if body is None:
-        raise APIException("You need to specify the request body as a json object.", status_code=400)
-    if 'name' not in body:
-        raise APIException('You need to specify the name.', status_code=400)
-    if 'birth_year' not in body:
-        raise APIException('You need to specify the birth_year.', status_code=400)
-    if 'height' not in body:
-        raise APIException('You need to specify the height.', status_code=400)
-    if 'skin_color' not in body:
-        raise APIException('You need to specify the skin_color.', status_code=400)
-    if 'eye_color' not in body:
-        raise APIException('You need to specify the eye_color.', status_code=400)
-
-    new_character = Character(name=body['name'], birth_year=body['birth_year'], height=body['height'], skin_color=body['skin_color'], eye_color=body['eye_color'] )
-    db.session.add(new_character)
-    db.session.commit()
-    return "ok", 200
-
 @app.route('/favourites', methods=['GET'])
+@jwt_required()
 def handle_favourites():
-    body = request.get_json()
-
-    if body is None:
-        raise APIException("You need to specify the request body as a json object.", status_code=400)
-    if 'user_id' not in body:
-        raise APIException('You need to specify the user_id.', status_code=400)
-
-    id = body['user_id']
+    id = get_jwt_identity()
 
     query_planets = Favourite_Planet.query.filter(Favourite_Planet.user_id == id).all()
     query_characters = Favourite_Character.query.filter(Favourite_Character.user_id == id).all()
@@ -186,6 +141,23 @@ def handle_favourites():
     characters = list(map(lambda x: x.serialize(), query_characters))
 
     return jsonify({"characters": characters, "planets": planets}), 200
+
+@app.route('/favourite_character', methods=['POST'])
+@jwt_required()
+def handle_favourite_character():
+    body = request.get_json()
+
+    if body is None:
+        raise APIException("You need to specify the request body as a json object.", status_code=400)
+    if 'character_id' not in body:
+        raise APIException('You need to specify the character_id.', status_code=400)
+
+    id = get_jwt_identity()
+
+    new_favourite = Favourite_Character(user_id=id, character_id=body['character_id'] )
+    db.session.add(new_favourite)
+    db.session.commit()
+    return "ok", 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
