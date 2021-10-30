@@ -71,7 +71,7 @@ def login():
     if not user or not bcrypt.check_password_hash(user.password, password):
         raise APIException('Please check your login details and try again.', status_code=400)
 
-    access_token = create_access_token(identity=email)
+    access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token)
 
 @app.route('/users', methods=['GET'])
@@ -105,7 +105,7 @@ def handle_favourite_planet():
         raise APIException("You need to specify the request body as a json object.", status_code=400)
     if 'planet_id' not in body:
         raise APIException('You need to specify the planet_id.', status_code=400)
-
+    
     id = get_jwt_identity()
 
     new_favourite = Favourite_Planet(user_id=id, planet_id=body['planet_id'] )
@@ -129,19 +129,6 @@ def handle_character_by_id(character_id):
 
     return jsonify(query.serialize()), 200
 
-@app.route('/favourites', methods=['GET'])
-@jwt_required()
-def handle_favourites():
-    id = get_jwt_identity()
-
-    query_planets = Favourite_Planet.query.filter(Favourite_Planet.user_id == id).all()
-    query_characters = Favourite_Character.query.filter(Favourite_Character.user_id == id).all()
-    
-    planets = list(map(lambda x: x.serialize(), query_planets))
-    characters = list(map(lambda x: x.serialize(), query_characters))
-
-    return jsonify({"characters": characters, "planets": planets}), 200
-
 @app.route('/favourite_character', methods=['POST'])
 @jwt_required()
 def handle_favourite_character():
@@ -158,6 +145,19 @@ def handle_favourite_character():
     db.session.add(new_favourite)
     db.session.commit()
     return "ok", 200
+
+@app.route('/favourites', methods=['GET'])
+@jwt_required()
+def handle_favourites():
+    id = get_jwt_identity()
+
+    query_planets = Favourite_Planet.query.filter(Favourite_Planet.user_id == id).all()
+    query_characters = Favourite_Character.query.filter(Favourite_Character.user_id == id).all()
+    
+    planets = list(map(lambda x: x.serialize(), query_planets))
+    characters = list(map(lambda x: x.serialize(), query_characters))
+
+    return jsonify({"characters": characters, "planets": planets}), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':

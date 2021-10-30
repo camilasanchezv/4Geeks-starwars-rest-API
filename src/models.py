@@ -28,6 +28,7 @@ class Planet(db.Model):
     orbital_period = Column(Integer, nullable=False)
     rotation_period = Column(Integer, nullable=False)
     diameter = Column(Integer, nullable=False)
+    favourite = db.relationship('Favourite_Planet', backref='planet')
 
     def __repr__(self):
         return '<Planet %r>' % self.name
@@ -51,6 +52,7 @@ class Character(db.Model):
     height = Column(Integer, nullable=False)
     skin_color = Column(String(100), nullable=False)
     eye_color = Column(String(100), nullable=False)
+    favourite = db.relationship('Favourite_Character', backref='character')
 
     def __repr__(self):
         return '<Character %r>' % self.name
@@ -70,6 +72,16 @@ class Favourite_Planet(db.Model):
     user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     planet_id = Column(Integer, ForeignKey('planet.id'), primary_key=True)
 
+    def serialize(self):
+        return {
+            "planet_id": self.planet_id,
+        }
+
 class Favourite_Character(db.Model):
     user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     character_id = Column(Integer, ForeignKey('character.id'), primary_key=True)
+
+    def serialize(self):
+        return {
+            "character_id": self.character_id,
+        }
